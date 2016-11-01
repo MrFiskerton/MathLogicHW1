@@ -115,7 +115,6 @@ Parser.prototype.parseExpressionLine = function (line) {
 
 Parser.prototype.isAxiom = function (s) {
     var d = {};
-    //console.log(s.toString());
     function axiomChecker(expression, schema) {
         if (typeof(expression) === "string" || schema.operation != expression.operation) {
             return false;
@@ -157,6 +156,7 @@ Parser.prototype.isAxiom = function (s) {
 Parser.prototype.parseInputFile = function (inputFileName) {
     var text = this.filesystem.readFileSync(inputFileName, 'utf8');
     var lines = text.split('\n');
+    //TODO: Parse Hypotesis
     for (var i = 0; i < lines.length; i++) {
         //console.log("Input: " + lines[i]);
         this.rootsOfExpression.push(this.parseExpressionLine(lines[i]));
@@ -173,16 +173,13 @@ var main = function () {
     var parser = new Parser();
     parser.parseInputFile("input.txt");
 
-    var j = -1;
     for (var w = 0; w < parser.rootsOfExpression.length; w++) {
         var deduct = parser.rootsOfExpression[w];
-        j++;
-        parser.resultStr += (j + 1);
+        parser.resultStr += (w + 1);
         parser.resultStr += " " + deduct.toString();
         //console.log("\n========================\n" + parser.resultStr);
-        //console.log("=======f=======");
+        //console.log("==============" + (w + 1));
         var f = parser.isAxiom(deduct);
-        //console.log(f);
         if (f != 0) {
             parser.resultStr += " (Сх.Аксиом " + f + " )\n";
         } else {
@@ -192,30 +189,30 @@ var main = function () {
             if (f != 0) {
                 parser.resultStr += "(Гипотеза " + f + " )\n";
             } else if (deduct in parser.rightP) {
-                for (var h in parser.rightP) {
-                    if (parser.rootsOfExpression[h].left in parser.fullP && h < j) {
-                        parser.resultStr += " (M.P " + (parser.fullP[parser.rootsOfExpression[h].left] + 1) + " " + (h + 1) + " )\n";
-                        f = true;//TODO:
+                for (var index = 0; index < parser.rightP[deduct].length; index++) {
+                    var key = parser.rightP[deduct][index];
+                    if (parser.rootsOfExpression[key].left in parser.fullP) {
+                        parser.resultStr += " (M.P " + (parser.fullP[parser.rootsOfExpression[key].left] + 1) + " " + (key + 1) + " )\n";
+                        f = 1;
                         break;
                     }
                 }
             }
         }
         if (f != 0) {
-            parser.fullP[deduct] = j;
-            if (typeof(deduct) == "Object" && deduct.operation != "!") {//TODO:WTF!!! Исправить проверку на тип
-                if (!(deduct.right in parser.rightp)) {
-                    parser.rightp[deduct.right] = [];
+            parser.fullP[deduct] = w;
+            if (typeof(deduct) == "object" && deduct.operation != "!") {
+                if (!(deduct.right in parser.rightP)) {
+                    parser.rightP[deduct.right] = [];
                 }
-                parser.rightp[deduct.right].push(j);
+                parser.rightP[deduct.right].push(w);
             }
         } else {
             parser.resultStr += " Не доказано\n";
         }
+        //console.log("RightP: ", parser.rightP);
+        //console.log("FullP: ", parser.fullP);
     }
     parser.printResult("output.txt");
-    //console.log("=================================");
-    //console.log(parser.axiomSchemas[0].toString());
-    //console.log("TEST: " + (parser.parseExpressionLine("(A->B)->(A->B->C)->(A->C)")).toString());
 };
 main();
