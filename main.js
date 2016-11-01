@@ -3,7 +3,6 @@
  */
 
 //"use strict";
-
 function Node(operation, left, right) {
     this.left = left;
     this.right = right;
@@ -13,6 +12,7 @@ function Node(operation, left, right) {
 Node.prototype.equals = function (other) {
     return typeof(this) === typeof(other) && this.operation === other.operation && this.left.equals(other.left) && this.right.equals(other.right);
 };
+String.prototype.equals = function (t) { return this === t};
 
 Node.prototype.toString = function () {
     if (this.operation === "!") {
@@ -29,7 +29,7 @@ function Parser() {
     this.resultStr = "";
     this.axiomSchemas = ["a->b->a", "(a->b)->(a->b->c)->(a->c)", "a->b->a&b", "a&b->a", "a&b->b", "a->a|b", "b->a|b",
         "(a->c)->(b->c)->(a|b->x)", "(a->b)->(a->!b)->!a", "!!a->a"].map(function (x) {
-        Parser.prototype.parseExpressionLine(x)
+        return Parser.prototype.parseExpressionLine(x)
     });//TODO:Проверить аксиомы
     this.rootsOfExpression = [];
     this.hypothesis = {};
@@ -145,6 +145,9 @@ Parser.prototype.isAxiom = function (s) {
                 if (!(schema.right in d)) {
                     s[schema.right] = expression.right;
                 } else {
+                    /*if (typeof(d[schema.right])) {
+
+                    }*/
                     return (d[schema.right].equals(expression.right));
                 }
             } else {
@@ -154,7 +157,7 @@ Parser.prototype.isAxiom = function (s) {
         return true;
     }
 
-    for (var number = 0; number < this.axiomSchemas; number++) {
+    for (var number = 0; number < this.axiomSchemas.length; number++) {
         d = {};
         console.error("LOL3");
         if (axiomChecker(s, this.axiomSchemas[number])) {
