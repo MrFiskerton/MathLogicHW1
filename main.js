@@ -12,7 +12,9 @@ function Node(operation, left, right) {
 Node.prototype.equals = function (other) {
     return typeof(this) === typeof(other) && this.operation === other.operation && this.left.equals(other.left) && this.right.equals(other.right);
 };
-String.prototype.equals = function (t) { return this === t};
+String.prototype.equals = function (t) {
+    return this[0] === t;
+};
 
 Node.prototype.toString = function () {
     if (this.operation === "!") {
@@ -38,7 +40,7 @@ function Parser() {
 }
 
 Parser.prototype.parseExpressionLine = function (line) {
-    console.log("Input: " + line);
+    //console.log("Input: " + line);
     var tokens = [];
     var operationPriority = {"!": 3, "&": 2, "|": 1, "->": 0};
     var isTypingVar = false;
@@ -62,7 +64,9 @@ Parser.prototype.parseExpressionLine = function (line) {
         }
     }
     //console.info("Tokens: "  + tokens/* + "ZZZ"*/);
-for(var v = 0; v < tokens.length; v++){console.log("{"+tokens[v] + "}");}
+    /*for (var v = 0; v < tokens.length; v++) {
+     console.log("{" + tokens[v] + "}");
+     }*/
     var n = tokens.length;
     i = 0;
     function rec() {
@@ -82,7 +86,7 @@ for(var v = 0; v < tokens.length; v++){console.log("{"+tokens[v] + "}");}
                     p = rec();
                 }
                 for (var k = 0; k < j; k++) {
-                    p =  new Node("!", p);
+                    p = new Node("!", p);
                 }
                 stackVar.push(p);
             } else if (c === ")") {
@@ -92,7 +96,7 @@ for(var v = 0; v < tokens.length; v++){console.log("{"+tokens[v] + "}");}
                 stackVar.push(rec());
             } else if (c in operationPriority) {
                 var last = stackVar.pop();
-                while (stackOper.length != 0 && operationPriority[stackOper[stackOper.length - 1]] >= operationPriority[c]) {
+                while (stackOper.length != 0 && operationPriority[stackOper[stackOper.length - 1]] >= operationPriority[c] && stackOper[stackOper.length - 1] != "->") {
                     last = new Node(stackOper.pop(), stackVar.pop(), last);
                 }
                 stackVar.push(last);
@@ -106,9 +110,10 @@ for(var v = 0; v < tokens.length; v++){console.log("{"+tokens[v] + "}");}
         while (stackOper.length != 0) {
             root = new Node(stackOper.pop(), stackVar.pop(), root);
         }
-        console.log(stackVar.length, stackOper.length);
+        //console.log(stackVar.length, stackOper.length);
         return root;
     }
+
     return rec();
 };
 
@@ -118,18 +123,13 @@ for(var v = 0; v < tokens.length; v++){console.log("{"+tokens[v] + "}");}
 //});
 
 Parser.prototype.isAxiom = function (s) {
-    console.error("LOL2");
     var d = {};
-    console.log(s.toString());
-    console.log("LOL1");
+    //console.log(s.toString());
     function axiomChecker(expression, schema) {
-        console.error("LOL2");
         if (typeof(expression) === "string" || schema.operation != expression.operation) {
             return false;
         }
         //Left
-        console.error("LOL2");
-        console.log((typeof(expression) === "string" || schema.operation != expression.operation));
         if (typeof(schema.left) == "string") {
             if (!(schema.left in d)) {
                 d[schema.left] = expression.left;// TODO: Сделать нормальную адресацию. И можно ли так ?!
@@ -145,9 +145,6 @@ Parser.prototype.isAxiom = function (s) {
                 if (!(schema.right in d)) {
                     s[schema.right] = expression.right;
                 } else {
-                    /*if (typeof(d[schema.right])) {
-
-                    }*/
                     return (d[schema.right].equals(expression.right));
                 }
             } else {
@@ -159,7 +156,6 @@ Parser.prototype.isAxiom = function (s) {
 
     for (var number = 0; number < this.axiomSchemas.length; number++) {
         d = {};
-        console.error("LOL3");
         if (axiomChecker(s, this.axiomSchemas[number])) {
             return (number + 1);
         }
@@ -193,9 +189,9 @@ var main = function () {
         parser.resultStr += (j + 1);
         parser.resultStr += " " + deduct.toString();
 
-        console.log("=======f=======");
+        //console.log("=======f=======");
         var f = parser.isAxiom(deduct);
-        console.log(f);
+        //console.log(f);
         if (f != 0) {
             parser.resultStr += " (Сх.Аксиом " + f + " )\n";
         } else {
@@ -227,7 +223,7 @@ var main = function () {
         }
     }
     parser.printResult("output.txt");
-    console.log("=================================");
+    //console.log("=================================");
     //console.log(parser.axiomSchemas[0].toString());
     //console.log("TEST: " + (parser.parseExpressionLine("(A->B)->(A->B->C)->(A->C)")).toString());
 };
