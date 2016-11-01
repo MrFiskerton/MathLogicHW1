@@ -2,18 +2,21 @@
  * Created by Fiskov Roman on 10.10.16.
  */
 
-//"use strict";
+"use strict";
+
 function Node(operation, left, right) {
-    this.left = left;
-    this.right = right;
-    this.operation = operation;
+    this.left = left || "";
+    this.right = right || "";
+    this.operation = operation || "";
 }
 
 Node.prototype.equals = function (other) {
     return typeof(this) === typeof(other) && this.operation === other.operation && this.left.equals(other.left) && this.right.equals(other.right);
 };
+
 String.prototype.equals = function (t) {
-    return this[0] === t;
+    //console.log(t, this, this[0], this[0] == t);
+    return this == t;
 };
 
 Node.prototype.toString = function () {
@@ -32,7 +35,7 @@ function Parser() {
     this.axiomSchemas = ["a->b->a", "(a->b)->(a->b->c)->(a->c)", "a->b->a&b", "a&b->a", "a&b->b", "a->a|b", "b->a|b",
         "(a->c)->(b->c)->(a|b->x)", "(a->b)->(a->!b)->!a", "!!a->a"].map(function (x) {
         return Parser.prototype.parseExpressionLine(x)
-    });//TODO:Проверить аксиомы
+    });
     this.rootsOfExpression = [];
     this.hypothesis = {};
     this.rightP = {};
@@ -40,13 +43,11 @@ function Parser() {
 }
 
 Parser.prototype.parseExpressionLine = function (line) {
-    //console.log("Input: " + line);
     var tokens = [];
     var operationPriority = {"!": 3, "&": 2, "|": 1, "->": 0};
     var isTypingVar = false;
     var i = 0;
     for (i = 0; i < line.length; i++) {
-        //console.log("==========" + line[i] + " ]" + (line[i] in operationPriority));
         if (line[i] in operationPriority || line[i] === "(" || line[i] === ")") {
             tokens.push(line[i]);
             isTypingVar = false;
@@ -54,19 +55,15 @@ Parser.prototype.parseExpressionLine = function (line) {
             tokens.push("->");
             i++;
             isTypingVar = false;
-        } else if (/*!(line[i] === " " || line[i] === "\n") && */ /^[а-яА-ЯёЁa-zA-Z0-9]+$/.test(line[i])) {
+        } else if (/^[а-яА-ЯёЁa-zA-Z0-9]+$/.test(line[i])) {
             if (isTypingVar) {
-                tokens[tokens.length - 1].concat(line[i]);
+                tokens[tokens.length - 1] += line[i];
             } else {
                 tokens.push(line[i]);
                 isTypingVar = true;
             }
         }
     }
-    //console.info("Tokens: "  + tokens/* + "ZZZ"*/);
-    /*for (var v = 0; v < tokens.length; v++) {
-     console.log("{" + tokens[v] + "}");
-     }*/
     var n = tokens.length;
     i = 0;
     function rec() {
@@ -110,17 +107,11 @@ Parser.prototype.parseExpressionLine = function (line) {
         while (stackOper.length != 0) {
             root = new Node(stackOper.pop(), stackVar.pop(), root);
         }
-        //console.log(stackVar.length, stackOper.length);
         return root;
     }
 
     return rec();
 };
-
-//Parser.axiomSchemas = ["a->b->a", "(a->b)->(a->b->c)->(a->c)", "a->b->a&b", "a&b->a", "a&b->b", "a->a|b", "b->a|b",
-//    "(a->c)->(b->c)->(a|b->x)", "(a->b)->(a->!b)->!a", "!!a->a"].map(function (x) {
-//    Parser.prototype.parseExpressionLine(x)
-//});
 
 Parser.prototype.isAxiom = function (s) {
     var d = {};
@@ -167,9 +158,9 @@ Parser.prototype.parseInputFile = function (inputFileName) {
     var text = this.filesystem.readFileSync(inputFileName, 'utf8');
     var lines = text.split('\n');
     for (var i = 0; i < lines.length; i++) {
-        //console.log("Recovery: [", (this.parseExpressionLine(lines[i])).toString(), "]");
-        //console.log((this.parseExpressionLine(lines[i])).toString());
+        //console.log("Input: " + lines[i]);
         this.rootsOfExpression.push(this.parseExpressionLine(lines[i]));
+        //console.log("Recovery: " + (this.rootsOfExpression[this.rootsOfExpression.length - 1]).toString());
     }
     return this.rootsOfExpression;
 };
@@ -181,14 +172,14 @@ Parser.prototype.printResult = function (outputFileName) {
 var main = function () {
     var parser = new Parser();
     parser.parseInputFile("input.txt");
-    //console.log(Parser.axiomSchemas[0].toString());
+
     var j = -1;
     for (var w = 0; w < parser.rootsOfExpression.length; w++) {
         var deduct = parser.rootsOfExpression[w];
         j++;
         parser.resultStr += (j + 1);
         parser.resultStr += " " + deduct.toString();
-
+        //console.log("\n========================\n" + parser.resultStr);
         //console.log("=======f=======");
         var f = parser.isAxiom(deduct);
         //console.log(f);
@@ -204,7 +195,7 @@ var main = function () {
                 for (var h in parser.rightP) {
                     if (parser.rootsOfExpression[h].left in parser.fullP && h < j) {
                         parser.resultStr += " (M.P " + (parser.fullP[parser.rootsOfExpression[h].left] + 1) + " " + (h + 1) + " )\n";
-                        f = true;//TODO: WTF!!!
+                        f = true;//TODO:
                         break;
                     }
                 }
