@@ -1,3 +1,7 @@
 # Intellij
 *.iml
 .idea/*
+
+
+#Test
+output.txt

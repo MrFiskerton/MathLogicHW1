@@ -15,7 +15,6 @@ Node.prototype.equals = function (other) {
 };
 
 String.prototype.equals = function (t) {
-    //console.log(t, this, this[0], this[0] == t);
     return this == t;
 };
 
@@ -122,7 +121,7 @@ Parser.prototype.isAxiom = function (s) {
         //Left
         if (typeof(schema.left) == "string") {
             if (!(schema.left in d)) {
-                d[schema.left] = expression.left;// TODO: Сделать нормальную адресацию. И можно ли так ?!
+                d[schema.left] = expression.left;
             } else if (!d[schema.left].equals(expression.left)) {
                 return false;
             }
@@ -158,9 +157,8 @@ Parser.prototype.parseInputFile = function (inputFileName) {
     var lines = text.split('\n');
     //TODO: Parse Hypotesis
     for (var i = 0; i < lines.length; i++) {
-        //console.log("Input: " + lines[i]);
+        if(lines[i] == "") continue;
         this.rootsOfExpression.push(this.parseExpressionLine(lines[i]));
-        //console.log("Recovery: " + (this.rootsOfExpression[this.rootsOfExpression.length - 1]).toString());
     }
     return this.rootsOfExpression;
 };
@@ -177,22 +175,21 @@ var main = function () {
         var deduct = parser.rootsOfExpression[w];
         parser.resultStr += (w + 1);
         parser.resultStr += " " + deduct.toString();
-        //console.log("\n========================\n" + parser.resultStr);
-        //console.log("==============" + (w + 1));
+
         var f = parser.isAxiom(deduct);
         if (f != 0) {
-            parser.resultStr += " (Сх.Аксиом " + f + " )\n";
+            parser.resultStr += " (Сх.Аксиом " + f + ")\n";
         } else {
             if (deduct in parser.hypothesis) {
                 f = (1 + parser.hypothesis);
             }
             if (f != 0) {
-                parser.resultStr += "(Гипотеза " + f + " )\n";
+                parser.resultStr += "(Гипотеза " + f + ")\n";
             } else if (deduct in parser.rightP) {
                 for (var index = 0; index < parser.rightP[deduct].length; index++) {
                     var key = parser.rightP[deduct][index];
                     if (parser.rootsOfExpression[key].left in parser.fullP) {
-                        parser.resultStr += " (M.P " + (parser.fullP[parser.rootsOfExpression[key].left] + 1) + " " + (key + 1) + " )\n";
+                        parser.resultStr += " (M.P " + (parser.fullP[parser.rootsOfExpression[key].left] + 1) + " " + (key + 1) + ")\n";
                         f = 1;
                         break;
                     }
@@ -210,9 +207,10 @@ var main = function () {
         } else {
             parser.resultStr += " Не доказано\n";
         }
-        //console.log("RightP: ", parser.rightP);
-        //console.log("FullP: ", parser.fullP);
     }
     parser.printResult("output.txt");
 };
+
+//var time = (new Date()).getTime();
 main();
+//console.log(((new Date()).getTime() - time));
