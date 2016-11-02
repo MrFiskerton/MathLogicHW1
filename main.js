@@ -36,7 +36,7 @@ function Parser() {
         return Parser.prototype.parseExpressionLine(x)
     });
     this.rootsOfExpression = [];
-    this.hypothesis = {};
+    this.cntHypothesis = 0;
     this.rightP = {};
     this.fullP = {};
 }
@@ -114,6 +114,7 @@ Parser.prototype.parseExpressionLine = function (line) {
 
 Parser.prototype.isAxiom = function (s) {
     var d = {};
+
     function axiomChecker(expression, schema) {
         if (typeof(expression) === "string" || schema.operation != expression.operation) {
             return false;
@@ -155,9 +156,19 @@ Parser.prototype.isAxiom = function (s) {
 Parser.prototype.parseInputFile = function (inputFileName) {
     var text = this.filesystem.readFileSync(inputFileName, 'utf8');
     var lines = text.split('\n');
-    //TODO: Parse Hypotesis
-    for (var i = 0; i < lines.length; i++) {
-        if(lines[i] == "") continue;
+    var start = 0;
+    if (lines[0].indexOf("|-") != -1) {
+        this.resultStr += lines[0] + "\n";
+        var h = (lines[0].split("|-"))[0].split(',');
+        for (var j = 0; j < h.length; j++) {
+            if (h[j] == "") continue;
+            this.axiomSchemas.push(this.parseExpressionLine(h[j]));
+            this.cntHypothesis++;
+        }
+        start = 1;
+    }
+    for (var i = start; i < lines.length; i++) {
+        if (lines[i] == "") continue;
         this.rootsOfExpression.push(this.parseExpressionLine(lines[i]));
     }
     return this.rootsOfExpression;
@@ -173,29 +184,27 @@ var main = function () {
 
     for (var w = 0; w < parser.rootsOfExpression.length; w++) {
         var deduct = parser.rootsOfExpression[w];
-        parser.resultStr += (w + 1);
-        parser.resultStr += " " + deduct.toString();
+        parser.resultStr += "(" + (w + 1) + ")";
+        parser.resultStr += " " + deduct.toString() + " ";
 
         var f = parser.isAxiom(deduct);
         if (f != 0) {
-            parser.resultStr += " (Сх.Аксиом " + f + ")\n";
-        } else {
-            if (deduct in parser.hypothesis) {
-                f = (1 + parser.hypothesis);
+            if (f <= 10) {
+                parser.resultStr += "(Сх. акс. " + f + ")\n";
+            } else {
+                parser.resultStr += "(Предп. " + (f - 10) + ")\n"
             }
-            if (f != 0) {
-                parser.resultStr += "(Гипотеза " + f + ")\n";
-            } else if (deduct in parser.rightP) {
-                for (var index = 0; index < parser.rightP[deduct].length; index++) {
-                    var key = parser.rightP[deduct][index];
-                    if (parser.rootsOfExpression[key].left in parser.fullP) {
-                        parser.resultStr += " (M.P " + (parser.fullP[parser.rootsOfExpression[key].left] + 1) + " " + (key + 1) + ")\n";
-                        f = 1;
-                        break;
-                    }
+        } else if (deduct in parser.rightP) {
+            for (var index = 0; index < parser.rightP[deduct].length; index++) {
+                var key = parser.rightP[deduct][index];
+                if (parser.rootsOfExpression[key].left in parser.fullP) {
+                    parser.resultStr += "(M.P. " + (parser.fullP[parser.rootsOfExpression[key].left] + 1) + " " + (key + 1) + ")\n";
+                    f = 1;
+                    break;
                 }
             }
         }
+
         if (f != 0) {
             parser.fullP[deduct] = w;
             if (typeof(deduct) == "object" && deduct.operation != "!") {
@@ -205,7 +214,7 @@ var main = function () {
                 parser.rightP[deduct.right].push(w);
             }
         } else {
-            parser.resultStr += " Не доказано\n";
+            parser.resultStr += "(Не доказано)\n";
         }
     }
     parser.printResult("output.txt");
